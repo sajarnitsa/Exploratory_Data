@@ -1,0 +1,87 @@
+---
+#Reproducible Research: Assignment 1
+
+
+### Loading and processing the data
+```{r}
+datos <- read.csv("./repdata_data_activity/activity.csv")
+no_NA <- na.omit(datos)
+rownames(no_NA) <- 1:nrow(no_NA)
+head(no_NA)
+```
+###Calculation of the mean and median total number of steps taken per day 
+
+Mean total number of steps taken per day
+```{r}
+total_number_steps <- aggregate(no_NA$steps, list(Date = no_NA$date), FUN = "sum")$x
+mean(total_number_steps)
+```
+Median total number of steps taken per day
+```{r}
+median(total_number_steps)
+```
+###Histogram of the total number of steps taken each day
+```{r}
+library(ggplot2)
+qplot(total_number_steps, xlab='Total steps', ylab='Frequency')
+```
+
+###Average daily activity pattern
+
+Calculation of  the mean steps for each five minute interval, and then put it in a data frame.
+
+```{r}
+steps_interval <- tapply(datos$steps, INDEX = datos$interval, FUN = mean, na.rm = TRUE)
+head(steps_interval)
+hour<-1:length(steps_interval)/12
+layout(mat = 1);
+```
+
+```{r}
+qplot(y=steps_interval, x=hour, geom="line", xlab="5 Min Interval", ylab="Number of steps", main="Average number of steps taken along the day")
+```
+
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r}
+max(steps_interval)
+steps_interval[100:110]
+```
+The 5-minute interval that, on average across all the days in the dataset, contains the maximum number of steps is 835.
+
+###Imputing missing values 
+
+The missing values are indicated with a NA in the original dataset. The total number of NA values s given by: 
+
+```{r}
+sum(is.na(datos$steps));
+```
+The percentage of missing values is:
+```{r}
+100*sum(is.na(datos$steps)) / length(datos$steps);
+```
+##Devise a strategy for filling the missing values
+
+A very simple method is to take the mean of a 5 min interval thru all days to fill ne NA values in the corresponding interval
+
+```{r}
+datos$fill <- datos$steps;
+filling <- rep(steps_interval,
+               times = length(datos$steps) / length(steps_interval));
+for (i in 1:length(datos$steps)) {
+    if (is.na(datos$fill[i]))
+        datos$fill[i] <- filling[i];
+    }
+```
+We proceed to do the same calculations with the filled data.  A comparison between the two summaries (with and without filling the NA values)
+
+```{r}
+steps_date_fill <- tapply(datos$fill, INDEX = datos$date,
+                             FUN = sum);
+summary(steps_date_fill);
+summary(total_number_steps);
+```
+shows that both results have the same mean and median. The histogram of the filled data shows that the original data distribution possesses fatter tails and the maximum is smaller.  
+
+```{r}
+qplot(steps_date_fill, xlab='Total steps', ylab='Frequency');
+```
